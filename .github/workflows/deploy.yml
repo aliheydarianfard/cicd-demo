@@ -34,3 +34,12 @@ jobs:
         password: ${{ secrets.VPS_PASS }}
         source: publish/
         target: /var/www/art-cicd-demo
+    - name: Restart service on VPS
+  uses: appleboy/ssh-action@master
+  with:
+    host: ${{ secrets.VPS_HOST }}
+    username: ${{ secrets.VPS_USER }}
+    password: ${{ secrets.VPS_PASS }}
+    script: |
+      sudo systemctl restart art-api
+    
