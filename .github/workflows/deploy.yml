@@ -33,7 +33,7 @@ jobs:
         username: ${{ secrets.VPS_USER }}
         password: ${{ secrets.VPS_PASS }}
         source: publish/
-        target: /var/www/art-cicd-demo
+        target: /var/www/reservation-service
 
     - name: Restart service on VPS
       uses: appleboy/ssh-action@master
