@@ -2,10 +2,11 @@ name: Build and Deploy to VPS
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, develop ]
 
 jobs:
-  build:
+  deploy-prod:
+    if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
 
     steps:
@@ -26,7 +27,7 @@ jobs:
     - name: Publish
       run: dotnet publish -c Release -o publish
 
-    - name: Deploy to VPS via SSH
+    - name: Deploy to VPS (Production)
       uses: appleboy/scp-action@master
       with:
         host: ${{ secrets.VPS_HOST }}
@@ -35,7 +36,7 @@ jobs:
         source: publish/
         target: /var/www/reservation-service
 
-    - name: Restart reservation-api service on VPS
+    - name: Restart production service
       uses: appleboy/ssh-action@master
       with:
         host: ${{ secrets.VPS_HOST }}
@@ -45,3 +46,45 @@ jobs:
           sudo systemctl daemon-reexec
           sudo systemctl daemon-reload
           sudo systemctl restart reservation-api
+
+  deploy-dev:
+    if: github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build
+      run: dotnet build --no-restore
+
+    - name: Publish
+      run: dotnet publish -c Release -o publish
+
+    - name: Deploy to VPS (Development)
+      uses: appleboy/scp-action@master
+      with:
+        host: ${{ secrets.VPS_HOST }}
+        username: ${{ secrets.VPS_USER }}
+        password: ${{ secrets.VPS_PASS }}
+        source: publish/
+        target: /var/www/dev-reservation-service
+
+    - name: Restart dev service
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.VPS_HOST }}
+        username: ${{ secrets.VPS_USER }}
+        password: ${{ secrets.VPS_PASS }}
+        script: |
+          sudo systemctl daemon-reexec
+          sudo systemctl daemon-reload
+          sudo systemctl restart reservation-api-dev
